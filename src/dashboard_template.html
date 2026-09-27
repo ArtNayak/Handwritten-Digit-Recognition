@@ -1,0 +1,466 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Digit &amp; Character Recognition — Capstone</title>
+<style>
+  :root {
+    --bg: #0b0d12; --panel: #12151c; --panel2: #171b24; --line: #262b36;
+    --ink: #d9dee8; --ink-dim: #7d8698; --accent: #ff8a3d; --accent2: #4dd0e1;
+    --good: #6fd08c; --bad: #ff6b6b; --mono: 'IBM Plex Mono', 'Consolas', monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: var(--mono); font-size: 13px; line-height: 1.5;
+  }
+  .layout { display: grid; grid-template-columns: 210px 1fr; min-height: 100vh; }
+  nav {
+    background: var(--panel); border-right: 1px solid var(--line);
+    padding: 20px 0; position: sticky; top: 0; height: 100vh; overflow-y: auto;
+  }
+  nav .brand { padding: 0 18px 18px; border-bottom: 1px solid var(--line); margin-bottom: 12px; }
+  nav .brand .t1 { color: var(--accent); font-weight: 700; font-size: 14px; letter-spacing: 0.5px; }
+  nav .brand .t2 { color: var(--ink-dim); font-size: 11px; margin-top: 4px; }
+  nav button {
+    display: block; width: 100%; text-align: left; background: none; border: none;
+    color: var(--ink-dim); padding: 9px 18px; cursor: pointer; font-family: var(--mono);
+    font-size: 12px; border-left: 2px solid transparent;
+  }
+  nav button:hover { color: var(--ink); background: var(--panel2); }
+  nav button.active { color: var(--accent); border-left-color: var(--accent); background: var(--panel2); }
+  nav .sec-label { color: var(--ink-dim); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; padding: 14px 18px 4px; opacity: 0.6; }
+  main { padding: 28px 34px; max-width: 1200px; }
+  .page { display: none; }
+  .page.active { display: block; animation: fade 0.25s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  h1 { font-size: 20px; color: #fff; margin: 0 0 4px; }
+  h1 .num { color: var(--accent); }
+  .sub { color: var(--ink-dim); margin: 0 0 24px; font-size: 12px; }
+  h2 { font-size: 13px; color: var(--accent2); text-transform: uppercase; letter-spacing: 1px; margin: 30px 0 14px; }
+  h2:first-child { margin-top: 0; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 16px 18px; margin-bottom: 16px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  @media (max-width: 900px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
+  .stat { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed var(--line); font-size: 12px; }
+  .stat:last-child { border-bottom: none; }
+  .stat .k { color: var(--ink-dim); }
+  .stat .v { color: var(--ink); font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); }
+  th { color: var(--ink-dim); text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px; font-weight: 400; }
+  tr:hover td { background: var(--panel2); }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; }
+  .pill.mlp { background: #2b3a52; color: #8ab4f8; }
+  .pill.cnn { background: #2b4536; color: var(--good); }
+  .pill.transfer { background: #4a2f52; color: #d9a3f0; }
+  .toggle-row { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .toggle-row button {
+    background: var(--panel2); border: 1px solid var(--line); color: var(--ink-dim);
+    padding: 6px 12px; border-radius: 4px; cursor: pointer; font-family: var(--mono); font-size: 11px;
+  }
+  .toggle-row button.on { color: #fff; border-color: var(--accent); }
+  svg text { fill: var(--ink-dim); font-family: var(--mono); font-size: 10px; }
+  .legend { display: flex; gap: 14px; font-size: 11px; color: var(--ink-dim); margin-top: 6px; }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+  .imgrid { display: flex; flex-wrap: wrap; gap: 10px; }
+  .imgrid figure { margin: 0; text-align: center; }
+  .imgrid img { image-rendering: pixelated; border: 1px solid var(--line); border-radius: 3px; background: #000; }
+  .imgrid figcaption { color: var(--ink-dim); font-size: 10px; margin-top: 3px; }
+  .note { color: var(--ink-dim); font-size: 11.5px; margin: 8px 0 0; }
+  .note.warn { color: var(--accent); }
+  .tabbar { display: flex; gap: 6px; margin-bottom: 14px; }
+  .tabbar button { background: none; border: 1px solid var(--line); color: var(--ink-dim); padding: 5px 12px; border-radius: 4px; cursor: pointer; font-family: var(--mono); font-size: 11px; }
+  .tabbar button.on { color: #fff; border-color: var(--accent2); background: var(--panel2); }
+  code { background: var(--panel2); padding: 1px 5px; border-radius: 3px; color: var(--accent2); }
+  .missing { color: var(--ink-dim); font-style: italic; padding: 30px; text-align: center; border: 1px dashed var(--line); border-radius: 6px; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: var(--line); border-radius: 4px; }
+</style>
+</head>
+<body>
+<div class="layout">
+  <nav>
+    <div class="brand">
+      <div class="t1">DIGIT/CHAR RECOGNITION</div>
+      <div class="t2">DLA Capstone — generated <span id="gen-date"></span></div>
+    </div>
+    <div class="sec-label">Overview</div>
+    <button data-page="overview" class="active">Summary</button>
+    <div class="sec-label">Dataset</div>
+    <button data-page="dataset">Stats &amp; cleaning</button>
+    <button data-page="preprocess">Preprocessing</button>
+    <div class="sec-label">Models</div>
+    <button data-page="results">Results &amp; metrics</button>
+    <button data-page="curves">Learning curves</button>
+    <button data-page="confusion">Confusion matrices</button>
+    <button data-page="features">Feature importance</button>
+  </nav>
+  <main>
+
+    <section class="page active" id="page-overview">
+      <h1>Handwritten Digit &amp; Character Recognition</h1>
+      <p class="sub">MLP vs CNN vs Transfer Learning (ResNet18) — MNIST digits + EMNIST balanced characters</p>
+      <h2>Best result per dataset</h2>
+      <div class="grid2" id="overview-best"></div>
+      <h2>All runs</h2>
+      <div class="card"><div id="overview-table"></div></div>
+    </section>
+
+    <section class="page" id="page-dataset">
+      <h1>Dataset</h1>
+      <p class="sub">Raw data, imported and described — cleaning applied where needed</p>
+      <div class="tabbar" id="dataset-tabs"></div>
+      <div id="dataset-body"></div>
+    </section>
+
+    <section class="page" id="page-preprocess">
+      <h1>Preprocessing</h1>
+      <p class="sub">What changes between raw pixels and what the model sees</p>
+      <div class="tabbar" id="preprocess-tabs"></div>
+      <div id="preprocess-body"></div>
+    </section>
+
+    <section class="page" id="page-results">
+      <h1>Results &amp; metrics</h1>
+      <p class="sub">Accuracy, precision, recall, F1 (macro-averaged) per model</p>
+      <div class="tabbar" id="results-tabs"></div>
+      <div id="results-body"></div>
+    </section>
+
+    <section class="page" id="page-curves">
+      <h1>Learning curves</h1>
+      <p class="sub">Per-epoch accuracy / loss / F1, all three models overlaid</p>
+      <div class="tabbar" id="curves-tabs"></div>
+      <div id="curves-body"></div>
+    </section>
+
+    <section class="page" id="page-confusion">
+      <h1>Confusion matrices</h1>
+      <p class="sub">Where each model actually gets confused, class by class</p>
+      <div class="tabbar" id="confusion-tabs"></div>
+      <div id="confusion-body"></div>
+    </section>
+
+    <section class="page" id="page-features">
+      <h1>Feature importance</h1>
+      <p class="sub">Saliency maps (which pixels drove the prediction) + learned first-layer filters</p>
+      <div class="tabbar" id="features-tabs"></div>
+      <div id="features-body"></div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+const DATA = /*__DATA__*/{}/*__END_DATA__*/;
+document.getElementById('gen-date').textContent = DATA.generated_at || '';
+
+const MODEL_COLOR = { mlp: '#8ab4f8', cnn: '#6fd08c', transfer: '#d9a3f0' };
+const MODEL_NAME = { mlp: 'MLP', cnn: 'CNN', transfer: 'Transfer (ResNet18)' };
+
+function el(html) { const d = document.createElement('div'); d.innerHTML = html.trim(); return d.firstChild; }
+function fmtPct(x) { return (x*100).toFixed(2) + '%'; }
+function fmtNum(x, d=4) { return typeof x === 'number' ? x.toFixed(d) : x; }
+
+// ---------- nav ----------
+document.querySelectorAll('nav button[data-page]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('nav button[data-page]').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-' + btn.dataset.page).classList.add('active');
+  });
+});
+
+// ---------- SVG chart helpers ----------
+function svg(w, h, inner) {
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" style="max-width:${w}px;display:block">${inner}</svg>`;
+}
+function lineChart(series, {w=520,h=240,pad=34,ymin=null,ymax=null} = {}) {
+  let allY = series.flatMap(s => s.data);
+  let lo = ymin ?? Math.min(...allY), hi = ymax ?? Math.max(...allY);
+  if (lo === hi) { lo -= 1; hi += 1; }
+  const n = Math.max(...series.map(s => s.data.length));
+  const x = i => pad + (i/(n-1)) * (w - pad*1.5);
+  const y = v => h - pad - ((v-lo)/(hi-lo)) * (h - pad*1.8);
+  let g = '';
+  // grid
+  for (let i=0;i<=4;i++) {
+    const gy = pad + i*(h-pad*1.8)/4;
+    const val = hi - i*(hi-lo)/4;
+    g += `<line x1="${pad}" y1="${gy}" x2="${w-pad*0.5}" y2="${gy}" stroke="#262b36" stroke-width="1"/>`;
+    g += `<text x="4" y="${gy+3}">${val.toFixed(2)}</text>`;
+  }
+  g += `<text x="${pad}" y="${h-6}">epoch 1</text><text x="${w-pad*0.5-40}" y="${h-6}">epoch ${n}</text>`;
+  for (const s of series) {
+    const pts = s.data.map((v,i) => `${x(i)},${y(v)}`).join(' ');
+    g += `<polyline points="${pts}" fill="none" stroke="${s.color}" stroke-width="2"/>`;
+  }
+  return svg(w, h, g);
+}
+function barChart(items, {w=520,h=240,pad=40,color=null,fmt=(v)=>v.toFixed(3)} = {}) {
+  const max = Math.max(...items.map(i => i.value), 0.0001);
+  const bw = (w - pad*1.2) / items.length;
+  let g = '';
+  items.forEach((it, i) => {
+    const bh = (it.value / max) * (h - pad*1.8);
+    const bx = pad*0.6 + i*bw;
+    const by = h - pad - bh;
+    g += `<rect x="${bx+bw*0.15}" y="${by}" width="${bw*0.7}" height="${bh}" fill="${it.color || color || '#ff8a3d'}" rx="2"/>`;
+    g += `<text x="${bx+bw*0.5}" y="${by-6}" text-anchor="middle">${fmt(it.value)}</text>`;
+    g += `<text x="${bx+bw*0.5}" y="${h-pad+16}" text-anchor="middle">${it.label}</text>`;
+  });
+  g += `<line x1="${pad*0.6}" y1="${h-pad}" x2="${w-pad*0.6}" y2="${h-pad}" stroke="#262b36"/>`;
+  return svg(w, h, g);
+}
+function classBarChart(labels, values, {w=760,h=180,pad=26} = {}) {
+  const max = Math.max(...values, 1);
+  const bw = (w - pad*1.4) / values.length;
+  let g = '';
+  values.forEach((v, i) => {
+    const bh = (v/max) * (h - pad*1.6);
+    const bx = pad*0.7 + i*bw;
+    g += `<rect x="${bx}" y="${h-pad-bh}" width="${Math.max(bw-1.5,1)}" height="${bh}" fill="#4dd0e1"/>`;
+    if (values.length <= 50) g += `<text x="${bx+bw/2}" y="${h-pad+13}" text-anchor="middle" font-size="9">${labels[i]}</text>`;
+  });
+  g += `<line x1="${pad*0.7}" y1="${h-pad}" x2="${w-pad*0.7}" y2="${h-pad}" stroke="#262b36"/>`;
+  return svg(w, h, g);
+}
+function heatmap(matrix, labels, {cell=null,max=1200} = {}) {
+  const n = matrix.length;
+  const c = cell || Math.max(8, Math.min(26, Math.floor(760/n)));
+  const w = n*c + 60, h = n*c + 60;
+  const mx = Math.max(...matrix.flat());
+  let g = '';
+  for (let r=0;r<n;r++) for (let col=0;col<n;col++) {
+    const v = matrix[r][col];
+    const t = v / mx;
+    const isDiag = r === col;
+    const color = isDiag ? `rgba(111,208,140,${0.25+t*0.75})` : `rgba(255,107,107,${t*0.85})`;
+    g += `<rect x="${60+col*c}" y="${60+r*c}" width="${c-1}" height="${c-1}" fill="${v===0?'#171b24':color}"/>`;
+  }
+  if (n <= 47) {
+    for (let i=0;i<n;i++) {
+      g += `<text x="52" y="${60+i*c+c*0.7}" text-anchor="end" font-size="9">${labels[i]}</text>`;
+      g += `<text x="${60+i*c+c*0.5}" y="52" text-anchor="middle" font-size="9">${labels[i]}</text>`;
+    }
+  }
+  g += `<text x="30" y="30" font-size="10">true \\ pred</text>`;
+  return svg(w, h, g);
+}
+
+// ---------- Overview ----------
+(function renderOverview() {
+  const runs = DATA.runs;
+  const byDataset = {};
+  runs.forEach(r => (byDataset[r.dataset] ??= []).push(r));
+  const bestBox = document.getElementById('overview-best');
+  Object.entries(byDataset).forEach(([ds, list]) => {
+    const best = list.slice().sort((a,b) => b.accuracy - a.accuracy)[0];
+    bestBox.appendChild(el(`
+      <div class="card">
+        <div class="stat"><span class="k">dataset</span><span class="v">${ds.toUpperCase()}</span></div>
+        <div class="stat"><span class="k">best model</span><span class="v pill ${best.model}">${MODEL_NAME[best.model]}</span></div>
+        <div class="stat"><span class="k">accuracy</span><span class="v">${fmtPct(best.accuracy)}</span></div>
+        <div class="stat"><span class="k">f1 (macro)</span><span class="v">${fmtNum(best.f1_macro)}</span></div>
+        <div class="stat"><span class="k">epochs / time</span><span class="v">${best.epochs} / ${(best.train_time_sec/60).toFixed(1)}m</span></div>
+      </div>`));
+  });
+  if (!runs.length) { bestBox.appendChild(el('<div class="missing">No completed runs yet.</div>')); }
+
+  let rows = runs.map(r => `
+    <tr>
+      <td><span class="pill ${r.model}">${MODEL_NAME[r.model]}</span></td>
+      <td>${r.dataset}</td>
+      <td>${fmtPct(r.accuracy)}</td>
+      <td>${fmtNum(r.precision_macro)}</td>
+      <td>${fmtNum(r.recall_macro)}</td>
+      <td>${fmtNum(r.f1_macro)}</td>
+      <td>${r.trainable_params.toLocaleString()}</td>
+      <td>${(r.train_time_sec/60).toFixed(1)}m</td>
+      <td>${r.device}</td>
+    </tr>`).join('');
+  document.getElementById('overview-table').innerHTML = `
+    <table><thead><tr><th>model</th><th>dataset</th><th>acc</th><th>prec</th><th>rec</th><th>f1</th><th>params</th><th>time</th><th>device</th></tr></thead>
+    <tbody>${rows || '<tr><td colspan=9 class="missing">no data</td></tr>'}</tbody></table>`;
+})();
+
+// ---------- Dataset ----------
+(function renderDataset() {
+  const tabs = document.getElementById('dataset-tabs');
+  const body = document.getElementById('dataset-body');
+  const keys = Object.keys(DATA.eda);
+  if (!keys.length) { body.appendChild(el('<div class="missing">No EDA data found.</div>')); return; }
+  function show(ds) {
+    const d = DATA.eda[ds];
+    tabs.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.ds === ds));
+    const sampleFigs = (imgs, cap) => Object.entries(imgs).slice(0, d.class_labels.length).map(([c, b64]) =>
+      `<figure><img src="data:image/png;base64,${b64}" width="56" height="56"><figcaption>${d.class_labels[c]}</figcaption></figure>`
+    ).join('');
+    body.innerHTML = `
+      <div class="grid2">
+        <div class="card">
+          <h2 style="margin-top:0">Raw stats</h2>
+          <div class="stat"><span class="k">train samples</span><span class="v">${d.train.samples.toLocaleString()}</span></div>
+          <div class="stat"><span class="k">test samples</span><span class="v">${d.test.samples.toLocaleString()}</span></div>
+          <div class="stat"><span class="k">image shape</span><span class="v">${d.train.image_shape.join(' x ')}, ${d.train.dtype}</span></div>
+          <div class="stat"><span class="k">pixel range</span><span class="v">[${d.train.pixel_min}, ${d.train.pixel_max}]</span></div>
+          <div class="stat"><span class="k">pixel mean / std</span><span class="v">${d.train.pixel_mean.toFixed(2)} / ${d.train.pixel_std.toFixed(2)}</span></div>
+          <div class="stat"><span class="k">classes</span><span class="v">${d.train.num_classes}</span></div>
+        </div>
+        <div class="card">
+          <h2 style="margin-top:0">Cleaning</h2>
+          <div class="stat"><span class="k">blank images found</span><span class="v">${d.train.blank_images + d.test.blank_images}</span></div>
+          <div class="stat"><span class="k">NaN pixels found</span><span class="v">${d.train.nan_pixels + d.test.nan_pixels}</span></div>
+          <p class="note">${d.clean_note}</p>
+        </div>
+      </div>
+      <h2>Class balance (train set)</h2>
+      <div class="card">${classBarChart(d.class_labels, d.train.class_counts)}</div>
+      <h2>Sample images — raw, one per class</h2>
+      <div class="card"><div class="imgrid">${sampleFigs(d.sample_images_raw)}</div></div>
+      <h2>Same samples, with training-time augmentation applied</h2>
+      <div class="card">
+        <div class="imgrid">${sampleFigs(d.sample_images_augmented)}</div>
+        <p class="note">Random rotation ±10° and translation ±10% — applied fresh each epoch on the train split only, so the model never sees the exact same pixels twice.</p>
+      </div>`;
+  }
+  tabs.innerHTML = keys.map(k => `<button data-ds="${k}">${k.toUpperCase()}</button>`).join('');
+  tabs.querySelectorAll('button').forEach(b => b.addEventListener('click', () => show(b.dataset.ds)));
+  show(keys[0]);
+})();
+
+// ---------- Preprocessing ----------
+(function renderPreprocess() {
+  const tabs = document.getElementById('preprocess-tabs');
+  const body = document.getElementById('preprocess-body');
+  const keys = Object.keys(DATA.eda);
+  if (!keys.length) { body.appendChild(el('<div class="missing">No data.</div>')); return; }
+  function show(ds) {
+    const d = DATA.eda[ds];
+    tabs.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.ds === ds));
+    body.innerHTML = `
+      <div class="card">
+        <h2 style="margin-top:0">Pipeline (data.py), in order</h2>
+        <ol>${d.preprocessing_steps.map(s => `<li style="margin-bottom:6px">${s}</li>`).join('')}</ol>
+        <p class="note">Test/inference split skips augmentation — same normalization, no randomness, so accuracy numbers are reproducible.</p>
+      </div>`;
+  }
+  tabs.innerHTML = keys.map(k => `<button data-ds="${k}">${k.toUpperCase()}</button>`).join('');
+  tabs.querySelectorAll('button').forEach(b => b.addEventListener('click', () => show(b.dataset.ds)));
+  show(keys[0]);
+})();
+
+// ---------- Results ----------
+(function renderResults() {
+  const tabs = document.getElementById('results-tabs');
+  const body = document.getElementById('results-body');
+  const datasets = [...new Set(DATA.runs.map(r => r.dataset))];
+  if (!datasets.length) { body.appendChild(el('<div class="missing">No runs yet.</div>')); return; }
+  function show(ds) {
+    tabs.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.ds === ds));
+    const runs = DATA.runs.filter(r => r.dataset === ds);
+    const metricBars = (metric, fmt) => barChart(
+      runs.map(r => ({ label: MODEL_NAME[r.model], value: r[metric], color: MODEL_COLOR[r.model] })),
+      { fmt }
+    );
+    body.innerHTML = `
+      <div class="grid3">
+        <div class="card"><h2 style="margin-top:0">Accuracy</h2>${metricBars('accuracy', v=>fmtPct(v))}</div>
+        <div class="card"><h2 style="margin-top:0">F1 (macro)</h2>${metricBars('f1_macro', v=>v.toFixed(3))}</div>
+        <div class="card"><h2 style="margin-top:0">Trainable params</h2>${barChart(runs.map(r=>({label:MODEL_NAME[r.model],value:r.trainable_params,color:MODEL_COLOR[r.model]})),{fmt:v=>(v/1000).toFixed(0)+'k'})}</div>
+      </div>
+      <div class="card">
+        <table><thead><tr><th>model</th><th>accuracy</th><th>precision</th><th>recall</th><th>f1</th><th>loss</th><th>params</th><th>train time</th></tr></thead>
+        <tbody>${runs.map(r => `<tr><td><span class="pill ${r.model}">${MODEL_NAME[r.model]}</span></td><td>${fmtPct(r.accuracy)}</td><td>${fmtNum(r.precision_macro)}</td><td>${fmtNum(r.recall_macro)}</td><td>${fmtNum(r.f1_macro)}</td><td>${fmtNum(r.loss)}</td><td>${r.trainable_params.toLocaleString()}</td><td>${(r.train_time_sec/60).toFixed(1)}m</td></tr>`).join('')}</tbody></table>
+      </div>`;
+  }
+  tabs.innerHTML = datasets.map(d => `<button data-ds="${d}">${d.toUpperCase()}</button>`).join('');
+  tabs.querySelectorAll('button').forEach(b => b.addEventListener('click', () => show(b.dataset.ds)));
+  show(datasets[0]);
+})();
+
+// ---------- Curves ----------
+(function renderCurves() {
+  const tabs = document.getElementById('curves-tabs');
+  const body = document.getElementById('curves-body');
+  const datasets = [...new Set(DATA.runs.map(r => r.dataset))];
+  if (!datasets.length) { body.appendChild(el('<div class="missing">No runs yet.</div>')); return; }
+  function show(ds) {
+    tabs.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.ds === ds));
+    const runs = DATA.runs.filter(r => r.dataset === ds && r.history && r.history.length);
+    const legend = runs.map(r => `<span><i style="background:${MODEL_COLOR[r.model]}"></i>${MODEL_NAME[r.model]}</span>`).join('');
+    const seriesFor = (key) => runs.map(r => ({ data: r.history.map(h => h[key]), color: MODEL_COLOR[r.model] }));
+    body.innerHTML = `
+      <div class="grid2">
+        <div class="card"><h2 style="margin-top:0">Accuracy per epoch</h2>${lineChart(seriesFor('accuracy'), {ymin:0})}<div class="legend">${legend}</div></div>
+        <div class="card"><h2 style="margin-top:0">Loss per epoch</h2>${lineChart(seriesFor('loss'))}<div class="legend">${legend}</div></div>
+        <div class="card"><h2 style="margin-top:0">F1 (macro) per epoch</h2>${lineChart(seriesFor('f1_macro'), {ymin:0})}<div class="legend">${legend}</div></div>
+        <div class="card"><h2 style="margin-top:0">Precision vs Recall (final epoch)</h2>${barChart(runs.flatMap(r=>[{label:MODEL_NAME[r.model]+' P',value:r.precision_macro,color:MODEL_COLOR[r.model]},{label:MODEL_NAME[r.model]+' R',value:r.recall_macro,color:MODEL_COLOR[r.model]}]))}</div>
+      </div>`;
+  }
+  tabs.innerHTML = datasets.map(d => `<button data-ds="${d}">${d.toUpperCase()}</button>`).join('');
+  tabs.querySelectorAll('button').forEach(b => b.addEventListener('click', () => show(b.dataset.ds)));
+  show(datasets[0]);
+})();
+
+// ---------- Confusion ----------
+(function renderConfusion() {
+  const tabs = document.getElementById('confusion-tabs');
+  const body = document.getElementById('confusion-body');
+  const opts = DATA.runs.filter(r => r.confusion_matrix).map(r => `${r.model}_${r.dataset}`);
+  if (!opts.length) { body.appendChild(el('<div class="missing">No confusion matrix data (older runs predate this feature — rerun train.py to get it).</div>')); return; }
+  function show(key) {
+    tabs.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.k === key));
+    const [model, dataset] = key.split('_');
+    const r = DATA.runs.find(r => r.model===model && r.dataset===dataset);
+    const labels = (DATA.eda[dataset] || {}).class_labels || r.confusion_matrix.map((_,i)=>i);
+    body.innerHTML = `<div class="card">${heatmap(r.confusion_matrix, labels)}
+      <p class="note">Green diagonal = correct. Red off-diagonal = confused pairs — darker means more frequent.</p></div>`;
+  }
+  tabs.innerHTML = opts.map(k => `<button data-k="${k}">${MODEL_NAME[k.split('_')[0]]} / ${k.split('_')[1]}</button>`).join('');
+  tabs.querySelectorAll('button').forEach(b => b.addEventListener('click', () => show(b.dataset.k)));
+  show(opts[0]);
+})();
+
+// ---------- Feature importance ----------
+(function renderFeatures() {
+  const tabs = document.getElementById('features-tabs');
+  const body = document.getElementById('features-body');
+  const keys = Object.keys(DATA.features || {});
+  if (!keys.length) { body.appendChild(el('<div class="missing">No feature-importance data yet — run feature_importance.py once checkpoints exist.</div>')); return; }
+  function show(key) {
+    tabs.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.k === key));
+    const f = DATA.features[key];
+    const labels = (DATA.eda[f.dataset] || {}).class_labels || [];
+    const sal = Object.entries(f.saliency).map(([c, o]) => `
+      <div style="text-align:center">
+        <div style="display:flex;gap:4px">
+          <img src="data:image/png;base64,${o.input}" width="70" height="70">
+          <img src="data:image/png;base64,${o.saliency}" width="70" height="70">
+        </div>
+        <figcaption style="color:var(--ink-dim);font-size:10px;margin-top:3px">class ${labels[c] ?? c}</figcaption>
+      </div>`).join('');
+    const filters = f.first_layer_filters.map(b64 => `<img src="data:image/png;base64,${b64}" width="48" height="48" style="border:1px solid var(--line);border-radius:3px">`).join('');
+    body.innerHTML = `
+      <div class="card">
+        <h2 style="margin-top:0">Saliency — input (left) vs gradient heatmap (right)</h2>
+        <p class="note">Brighter pixels in the right image are the ones that most increased the score for the correct class — a vanilla-gradient saliency map, computed directly from the trained network.</p>
+        <div class="imgrid">${sal}</div>
+      </div>
+      <div class="card">
+        <h2 style="margin-top:0">Learned first-layer features</h2>
+        <p class="note">${f.model === 'mlp' ? 'Top-16 first-layer neurons by weight norm, reshaped to 28x28 — each is literally the pixel pattern that neuron responds to.' : 'First-layer convolution filters — the edge/stroke detectors the network learned directly from data.'}</p>
+        <div class="imgrid">${filters}</div>
+      </div>`;
+  }
+  tabs.innerHTML = keys.map(k => `<button data-k="${k}">${MODEL_NAME[k.split('_')[0]]} / ${k.split('_')[1]}</button>`).join('');
+  tabs.querySelectorAll('button').forEach(b => b.addEventListener('click', () => show(b.dataset.k)));
+  show(keys[0]);
+})();
+</script>
+</body>
+</html>
